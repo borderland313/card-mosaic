@@ -27,3 +27,17 @@ Bundled SVG presets for quick testing.
 - `bolt.svg`
 - `chat-bubble.svg`
 - `mountain.svg`
+
+## In-repo asymmetrical / block-shaded presets (CC0 / Public Domain dedication)
+- `profile-face.svg`
+- `pixel-parrot.svg`
+- `side-city.svg`
+- `spiral-block.svg`
+- `hand-point.svg`
+- `robot-head.svg`
+- `ascii-runner.svg`
+- `wave-koi.svg`
+- `glitch-skull.svg`
+- `asym-mandala.svg`
+- `block-dragon.svg`
+- `megaphone.svg`
