@@ -3,7 +3,7 @@
 Card faces used in the mosaic renderer are from:
 - **hayeah/playing-cards-assets**
 - Repo: https://github.com/hayeah/playing-cards-assets
-- Path used: `svg-cards/*_of_spades.svg`
+- Path used: `svg-cards/*_of_<suit>.svg` for spades/clubs/hearts/diamonds
 - License: **MIT**
 
 ## Included files

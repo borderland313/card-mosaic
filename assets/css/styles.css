@@ -38,6 +38,32 @@ label {
   gap: 0.3rem;
 }
 
+.suit-box {
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 0.55rem;
+  background: #1a1a1a;
+}
+
+.suit-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem 0.8rem;
+  margin-bottom: 0.45rem;
+}
+
+.suit-grid label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.suit-actions {
+  display: flex;
+  gap: 0.35rem;
+}
+
 input, select, button {
   padding: 0.45rem;
   border-radius: 8px;

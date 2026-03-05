@@ -7,32 +7,39 @@ const generateBtn = document.getElementById('generateBtn');
 const exportJsonBtn = document.getElementById('exportJsonBtn');
 const exportCsvBtn = document.getElementById('exportCsvBtn');
 const statusPanel = document.getElementById('statusPanel');
+const suitInputs = Array.from(document.querySelectorAll('.suitInput'));
+const suitsAllBtn = document.getElementById('suitsAllBtn');
+const suitsBlackBtn = document.getElementById('suitsBlackBtn');
+const suitsRedBtn = document.getElementById('suitsRedBtn');
 
 const originalCanvas = document.getElementById('originalCanvas');
 const originalCtx = originalCanvas.getContext('2d');
 const mosaicCanvas = document.getElementById('mosaicCanvas');
 const mosaicCtx = mosaicCanvas.getContext('2d');
-
 const sourceImage = document.getElementById('sourceImage');
 
 const ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
-const cardWidthInches = 2.5;
-const cardHeightInches = 3.5;
-
-const cardImagePaths = {
-  A: 'assets/img/cards/ace_of_spades.svg',
-  '2': 'assets/img/cards/2_of_spades.svg',
-  '3': 'assets/img/cards/3_of_spades.svg',
-  '4': 'assets/img/cards/4_of_spades.svg',
-  '5': 'assets/img/cards/5_of_spades.svg',
-  '6': 'assets/img/cards/6_of_spades.svg',
-  '7': 'assets/img/cards/7_of_spades.svg',
-  '8': 'assets/img/cards/8_of_spades.svg',
-  '9': 'assets/img/cards/9_of_spades.svg',
-  '10': 'assets/img/cards/10_of_spades.svg'
+const suits = ['spades', 'clubs', 'hearts', 'diamonds'];
+const suitColor = {
+  spades: 'black',
+  clubs: 'black',
+  hearts: 'red',
+  diamonds: 'red'
 };
 
+const cardWidthInches = 2.5;
+const cardHeightInches = 3.5;
+const cardImagePaths = {};
 const cardImages = {};
+
+for (const rank of ranks) {
+  const fileRank = rank === 'A' ? 'ace' : rank;
+  for (const suit of suits) {
+    const key = `${rank}_${suit}`;
+    cardImagePaths[key] = `assets/img/cards/${fileRank}_of_${suit}.svg`;
+  }
+}
+
 let cardImagesLoaded = false;
 let lastGrid = [];
 let autoFitNote = 'No auto-fit yet.';
@@ -52,13 +59,20 @@ function loadImage(src) {
 
 async function ensureCardImagesLoaded() {
   if (cardImagesLoaded) return;
-
-  const tasks = ranks.map(async (rank) => {
-    cardImages[rank] = await loadImage(cardImagePaths[rank]);
+  const tasks = Object.entries(cardImagePaths).map(async ([key, path]) => {
+    cardImages[key] = await loadImage(path);
   });
-
   await Promise.all(tasks);
   cardImagesLoaded = true;
+}
+
+function getSelectedSuits() {
+  const selected = suitInputs.filter((el) => el.checked).map((el) => el.value);
+  if (!selected.length) {
+    suitInputs[0].checked = true;
+    return [suitInputs[0].value];
+  }
+  return selected;
 }
 
 function brightnessToRank(value) {
@@ -66,12 +80,24 @@ function brightnessToRank(value) {
   return ranks[idx];
 }
 
-function buildInventory(grid) {
-  const counts = Object.fromEntries(ranks.map((r) => [r, 0]));
-  for (const row of grid) {
-    for (const rank of row) counts[rank]++;
+function chooseSuit(brightness, row, col, selectedSuits) {
+  const blackSuits = selectedSuits.filter((s) => suitColor[s] === 'black');
+  const redSuits = selectedSuits.filter((s) => suitColor[s] === 'red');
+
+  let pool = selectedSuits;
+
+  if (blackSuits.length && redSuits.length) {
+    const tone = brightness / 255;
+    if (tone < 0.42) {
+      pool = blackSuits;
+    } else if (tone > 0.58) {
+      pool = redSuits;
+    } else {
+      pool = (row + col) % 2 === 0 ? blackSuits : redSuits;
+    }
   }
-  return counts;
+
+  return pool[(row * 131 + col * 17) % pool.length];
 }
 
 function contrastBrightness(v, contrast) {
@@ -94,7 +120,7 @@ function setCanvasSizes(widthCards, heightCards) {
 function drawOriginal(img) {
   const cw = originalCanvas.width;
   const ch = originalCanvas.height;
-  originalCtx.fillStyle = '#ffffff';
+  originalCtx.fillStyle = '#fff';
   originalCtx.fillRect(0, 0, cw, ch);
 
   const scale = Math.min(cw / img.width, ch / img.height);
@@ -115,23 +141,12 @@ function drawMosaicGrid(grid, rows, cols) {
 
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
-      const rank = grid[r][c];
-      const cardImg = cardImages[rank];
-      if (!cardImg) continue;
-      mosaicCtx.drawImage(cardImg, c * cellW, r * cellH, cellW, cellH);
+      const cell = grid[r][c];
+      const img = cardImages[`${cell.rank}_${cell.suit}`];
+      if (!img) continue;
+      mosaicCtx.drawImage(img, c * cellW, r * cellH, cellW, cellH);
     }
   }
-}
-
-function formatDimensions(widthCards, heightCards) {
-  const widthIn = widthCards * cardWidthInches;
-  const heightIn = heightCards * cardHeightInches;
-  return {
-    widthIn,
-    heightIn,
-    widthFt: widthIn / 12,
-    heightFt: heightIn / 12
-  };
 }
 
 function estimateAutoFitDimensions(img) {
@@ -179,14 +194,38 @@ function applyAutoFit(img) {
   const fit = estimateAutoFitDimensions(img);
   widthCardsInput.value = fit.width;
   heightCardsInput.value = fit.height;
-
-  autoFitNote = `Auto-fit from ${fit.oldWidth}×${fit.oldHeight} (${fit.oldArea} cards) to ${fit.width}×${fit.height} (${fit.newArea} cards) based on source aspect.`;
+  autoFitNote = `Auto-fit from ${fit.oldWidth}×${fit.oldHeight} (${fit.oldArea} cards) to ${fit.width}×${fit.height} (${fit.newArea} cards) using source aspect.`;
 }
 
-function updateStatus(grid, widthCards, heightCards) {
-  const inventory = buildInventory(grid);
+function formatDimensions(widthCards, heightCards) {
+  const widthIn = widthCards * cardWidthInches;
+  const heightIn = heightCards * cardHeightInches;
+  return {
+    widthIn,
+    heightIn,
+    widthFt: widthIn / 12,
+    heightFt: heightIn / 12
+  };
+}
+
+function buildStats(grid, selectedSuits) {
+  const rankCounts = Object.fromEntries(ranks.map((r) => [r, 0]));
+  const suitCounts = Object.fromEntries(suits.map((s) => [s, 0]));
+
+  for (const row of grid) {
+    for (const cell of row) {
+      rankCounts[cell.rank]++;
+      suitCounts[cell.suit]++;
+    }
+  }
+
+  return { rankCounts, suitCounts, selectedSuits };
+}
+
+function updateStatus(grid, widthCards, heightCards, selectedSuits) {
   const totalCards = widthCards * heightCards;
   const dims = formatDimensions(widthCards, heightCards);
+  const { rankCounts, suitCounts } = buildStats(grid, selectedSuits);
 
   statusPanel.textContent = [
     'Status',
@@ -195,11 +234,15 @@ function updateStatus(grid, widthCards, heightCards) {
     `Total cards: ${totalCards}`,
     `Total size (in): ${dims.widthIn.toFixed(1)}" W x ${dims.heightIn.toFixed(1)}" H`,
     `Total size (ft): ${dims.widthFt.toFixed(2)}' W x ${dims.heightFt.toFixed(2)}' H`,
+    `Selected suits: ${selectedSuits.join(', ')}`,
     '',
     autoFitNote,
     '',
-    'Inventory',
-    ...Object.entries(inventory).map(([rank, count]) => `${rank}: ${count}`)
+    'Suit counts',
+    ...Object.entries(suitCounts).map(([s, n]) => `${s}: ${n}`),
+    '',
+    'Rank counts',
+    ...Object.entries(rankCounts).map(([r, n]) => `${r}: ${n}`)
   ].join('\n');
 }
 
@@ -207,6 +250,7 @@ async function generateFromImage(img) {
   const widthCards = Number(widthCardsInput.value);
   const heightCards = Number(heightCardsInput.value);
   const contrast = Number(contrastInput.value);
+  const selectedSuits = getSelectedSuits();
 
   await ensureCardImagesLoaded();
 
@@ -227,7 +271,9 @@ async function generateFromImage(img) {
       const bb = data[i + 2];
       const gray = 0.299 * rr + 0.587 * gg + 0.114 * bb;
       const adjusted = contrastBrightness(gray, contrast);
-      row.push(brightnessToRank(adjusted));
+      const rank = brightnessToRank(adjusted);
+      const suit = chooseSuit(adjusted, r, c, selectedSuits);
+      row.push({ rank, suit });
     }
     grid.push(row);
   }
@@ -236,7 +282,7 @@ async function generateFromImage(img) {
   setCanvasSizes(widthCards, heightCards);
   drawOriginal(img);
   drawMosaicGrid(grid, heightCards, widthCards);
-  updateStatus(grid, widthCards, heightCards);
+  updateStatus(grid, widthCards, heightCards, selectedSuits);
 }
 
 function download(filename, content, type = 'text/plain') {
@@ -247,6 +293,16 @@ function download(filename, content, type = 'text/plain') {
   a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+async function regenerateCurrent(note = 'Manual form update.') {
+  if (!sourceImage.src) return;
+  autoFitNote = note;
+  try {
+    await generateFromImage(sourceImage);
+  } catch (error) {
+    alert(error.message);
+  }
 }
 
 function processLoadedImage() {
@@ -262,7 +318,6 @@ function loadImageFromUrl(url) {
 imageInput.addEventListener('change', (e) => {
   const file = e.target.files?.[0];
   if (!file) return;
-
   const url = URL.createObjectURL(file);
   sourceImage.onload = () => {
     processLoadedImage();
@@ -275,20 +330,30 @@ svgPicker.addEventListener('change', () => {
   if (svgPicker.value) loadImageFromUrl(svgPicker.value);
 });
 
-generateBtn.addEventListener('click', async () => {
-  if (!sourceImage.src) {
-    alert('Pick or upload an image first.');
-    return;
-  }
-
-  autoFitNote = 'Manual regenerate with current width/height.';
-
-  try {
-    await generateFromImage(sourceImage);
-  } catch (error) {
-    alert(error.message);
-  }
+[widthCardsInput, heightCardsInput, contrastInput].forEach((el) => {
+  el.addEventListener('input', () => regenerateCurrent('Manual form update.'));
 });
+
+suitInputs.forEach((el) => {
+  el.addEventListener('change', () => regenerateCurrent('Manual suit selection update.'));
+});
+
+suitsAllBtn.addEventListener('click', () => {
+  suitInputs.forEach((el) => (el.checked = true));
+  regenerateCurrent('Suit preset: all suits.');
+});
+
+suitsBlackBtn.addEventListener('click', () => {
+  suitInputs.forEach((el) => (el.checked = el.value === 'spades' || el.value === 'clubs'));
+  regenerateCurrent('Suit preset: black suits only.');
+});
+
+suitsRedBtn.addEventListener('click', () => {
+  suitInputs.forEach((el) => (el.checked = el.value === 'hearts' || el.value === 'diamonds'));
+  regenerateCurrent('Suit preset: red suits only.');
+});
+
+generateBtn.addEventListener('click', () => regenerateCurrent('Manual regenerate with current settings.'));
 
 exportJsonBtn.addEventListener('click', () => {
   if (!lastGrid.length) return alert('Generate first.');
@@ -297,6 +362,6 @@ exportJsonBtn.addEventListener('click', () => {
 
 exportCsvBtn.addEventListener('click', () => {
   if (!lastGrid.length) return alert('Generate first.');
-  const csv = lastGrid.map((row) => row.join(',')).join('\n');
+  const csv = lastGrid.map((row) => row.map((c) => `${c.rank}_${c.suit}`).join(',')).join('\n');
   download('card-mosaic-map.csv', csv, 'text/csv');
 });
