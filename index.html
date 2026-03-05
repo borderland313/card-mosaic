@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Card Mosaic Tool</title>
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body>
+  <main>
+    <h1>Card Mosaic Tool</h1>
+
+    <section class="controls">
+      <label>Pick bundled SVG
+        <select id="svgPicker">
+          <option value="">-- none --</option>
+          <option value="assets/img/svg-sources/butterfly.svg">Butterfly</option>
+          <option value="assets/img/svg-sources/cat.svg">Cat</option>
+        </select>
+      </label>
+
+      <label>Or upload image
+        <input id="imageInput" type="file" accept="image/*,.svg" />
+      </label>
+
+      <label>Rows
+        <input id="rowsInput" type="number" min="5" max="300" value="60" />
+      </label>
+
+      <label>Columns
+        <input id="colsInput" type="number" min="5" max="300" value="45" />
+      </label>
+
+      <label>Contrast
+        <input id="contrastInput" type="range" min="0.5" max="2" step="0.05" value="1" />
+      </label>
+
+      <button id="generateBtn">Generate</button>
+      <button id="exportJsonBtn">Export JSON</button>
+      <button id="exportCsvBtn">Export CSV</button>
+    </section>
+
+    <section class="output">
+      <canvas id="previewCanvas" width="900" height="600"></canvas>
+      <pre id="inventory"></pre>
+    </section>
+
+    <img id="sourceImage" alt="source" hidden />
+  </main>
+
+  <script src="assets/js/app.js"></script>
+</body>
+</html>
