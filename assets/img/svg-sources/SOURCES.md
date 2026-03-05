@@ -1,10 +1,29 @@
-# SVG Sources
+# SVG Preset Sources
 
-Free starter SVG set bundled in this repo.
+Bundled SVG presets for quick testing.
 
-## Files
-- `butterfly.svg` — custom in-repo starter asset
-- `cat.svg` — custom in-repo starter asset
+## Openclipart (Public Domain)
+- `butterfly.svg`
+- `cat.svg`
 
-## License
-These starter SVGs are released under **CC0 / Public Domain dedication** for unrestricted reuse.
+## In-repo simple test presets (CC0 / Public Domain dedication)
+- `circle.svg`
+- `square.svg`
+- `triangle.svg`
+- `diamond.svg`
+- `star.svg`
+- `heart.svg`
+- `moon.svg`
+- `sun.svg`
+- `target.svg`
+- `plus.svg`
+- `x-shape.svg`
+- `arrow-right.svg`
+- `checker.svg`
+- `barcode.svg`
+- `pawn.svg`
+- `ghost.svg`
+- `keyhole.svg`
+- `bolt.svg`
+- `chat-bubble.svg`
+- `mountain.svg`

@@ -35,6 +35,11 @@ const cardImagePaths = {
 const cardImages = {};
 let cardImagesLoaded = false;
 let lastGrid = [];
+let autoFitNote = 'No auto-fit yet.';
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
 
 function loadImage(src) {
   return new Promise((resolve, reject) => {
@@ -129,6 +134,55 @@ function formatDimensions(widthCards, heightCards) {
   };
 }
 
+function estimateAutoFitDimensions(img) {
+  const currentWidth = Number(widthCardsInput.value) || 45;
+  const currentHeight = Number(heightCardsInput.value) || 60;
+  const budget = Math.max(25, currentWidth * currentHeight);
+
+  const imageAspect = img.width / img.height;
+  const gridRatio = imageAspect * (cardHeightInches / cardWidthInches);
+
+  let bestWidth = currentWidth;
+  let bestHeight = currentHeight;
+  let bestArea = 0;
+
+  for (let h = 5; h <= 300; h++) {
+    const w = Math.round(h * gridRatio);
+    if (w < 5 || w > 300) continue;
+    const area = w * h;
+    if (area <= budget && area > bestArea) {
+      bestArea = area;
+      bestWidth = w;
+      bestHeight = h;
+    }
+  }
+
+  if (bestArea === 0) {
+    const fallbackHeight = clamp(Math.round(Math.sqrt(budget / Math.max(gridRatio, 0.1))), 5, 300);
+    const fallbackWidth = clamp(Math.round(fallbackHeight * gridRatio), 5, 300);
+    bestWidth = fallbackWidth;
+    bestHeight = fallbackHeight;
+    bestArea = bestWidth * bestHeight;
+  }
+
+  return {
+    width: bestWidth,
+    height: bestHeight,
+    oldWidth: currentWidth,
+    oldHeight: currentHeight,
+    oldArea: currentWidth * currentHeight,
+    newArea: bestArea
+  };
+}
+
+function applyAutoFit(img) {
+  const fit = estimateAutoFitDimensions(img);
+  widthCardsInput.value = fit.width;
+  heightCardsInput.value = fit.height;
+
+  autoFitNote = `Auto-fit from ${fit.oldWidth}×${fit.oldHeight} (${fit.oldArea} cards) to ${fit.width}×${fit.height} (${fit.newArea} cards) based on source aspect.`;
+}
+
 function updateStatus(grid, widthCards, heightCards) {
   const inventory = buildInventory(grid);
   const totalCards = widthCards * heightCards;
@@ -141,6 +195,8 @@ function updateStatus(grid, widthCards, heightCards) {
     `Total cards: ${totalCards}`,
     `Total size (in): ${dims.widthIn.toFixed(1)}" W x ${dims.heightIn.toFixed(1)}" H`,
     `Total size (ft): ${dims.widthFt.toFixed(2)}' W x ${dims.heightFt.toFixed(2)}' H`,
+    '',
+    autoFitNote,
     '',
     'Inventory',
     ...Object.entries(inventory).map(([rank, count]) => `${rank}: ${count}`)
@@ -193,14 +249,13 @@ function download(filename, content, type = 'text/plain') {
   URL.revokeObjectURL(url);
 }
 
+function processLoadedImage() {
+  applyAutoFit(sourceImage);
+  generateFromImage(sourceImage).catch((error) => alert(error.message));
+}
+
 function loadImageFromUrl(url) {
-  sourceImage.onload = async () => {
-    try {
-      await generateFromImage(sourceImage);
-    } catch (error) {
-      alert(error.message);
-    }
-  };
+  sourceImage.onload = processLoadedImage;
   sourceImage.src = url;
 }
 
@@ -209,14 +264,9 @@ imageInput.addEventListener('change', (e) => {
   if (!file) return;
 
   const url = URL.createObjectURL(file);
-  sourceImage.onload = async () => {
-    try {
-      await generateFromImage(sourceImage);
-    } catch (error) {
-      alert(error.message);
-    } finally {
-      URL.revokeObjectURL(url);
-    }
+  sourceImage.onload = () => {
+    processLoadedImage();
+    URL.revokeObjectURL(url);
   };
   sourceImage.src = url;
 });
@@ -230,6 +280,8 @@ generateBtn.addEventListener('click', async () => {
     alert('Pick or upload an image first.');
     return;
   }
+
+  autoFitNote = 'Manual regenerate with current width/height.';
 
   try {
     await generateFromImage(sourceImage);
