@@ -154,31 +154,36 @@ function estimateAutoFitDimensions(img) {
   const currentHeight = Number(heightCardsInput.value) || 60;
   const budget = Math.max(25, currentWidth * currentHeight);
 
-  const imageAspect = img.width / img.height;
-  const gridRatio = imageAspect * (cardHeightInches / cardWidthInches);
+  // Target is physical aspect of finished piece, not raw card-count ratio.
+  const targetAspect = img.width / img.height;
 
   let bestWidth = currentWidth;
   let bestHeight = currentHeight;
   let bestArea = 0;
+  let bestError = Infinity;
 
   for (let h = 5; h <= 300; h++) {
-    const w = Math.round(h * gridRatio);
-    if (w < 5 || w > 300) continue;
-    const area = w * h;
-    if (area <= budget && area > bestArea) {
-      bestArea = area;
-      bestWidth = w;
-      bestHeight = h;
+    for (let w = 5; w <= 300; w++) {
+      const area = w * h;
+      if (area > budget) continue;
+
+      const physicalAspect = (w * cardWidthInches) / (h * cardHeightInches);
+      const error = Math.abs(Math.log(physicalAspect / targetAspect));
+
+      if (
+        error < bestError - 1e-9 ||
+        (Math.abs(error - bestError) < 1e-9 && area > bestArea)
+      ) {
+        bestError = error;
+        bestArea = area;
+        bestWidth = w;
+        bestHeight = h;
+      }
     }
   }
 
-  if (bestArea === 0) {
-    const fallbackHeight = clamp(Math.round(Math.sqrt(budget / Math.max(gridRatio, 0.1))), 5, 300);
-    const fallbackWidth = clamp(Math.round(fallbackHeight * gridRatio), 5, 300);
-    bestWidth = fallbackWidth;
-    bestHeight = fallbackHeight;
-    bestArea = bestWidth * bestHeight;
-  }
+  const actualAspect = (bestWidth * cardWidthInches) / (bestHeight * cardHeightInches);
+  const aspectErrorPct = Math.abs((actualAspect - targetAspect) / targetAspect) * 100;
 
   return {
     width: bestWidth,
@@ -186,7 +191,10 @@ function estimateAutoFitDimensions(img) {
     oldWidth: currentWidth,
     oldHeight: currentHeight,
     oldArea: currentWidth * currentHeight,
-    newArea: bestArea
+    newArea: bestArea,
+    targetAspect,
+    actualAspect,
+    aspectErrorPct
   };
 }
 
@@ -194,7 +202,7 @@ function applyAutoFit(img) {
   const fit = estimateAutoFitDimensions(img);
   widthCardsInput.value = fit.width;
   heightCardsInput.value = fit.height;
-  autoFitNote = `Auto-fit from ${fit.oldWidth}×${fit.oldHeight} (${fit.oldArea} cards) to ${fit.width}×${fit.height} (${fit.newArea} cards) using source aspect.`;
+  autoFitNote = `Auto-fit ${fit.oldWidth}×${fit.oldHeight} (${fit.oldArea}) → ${fit.width}×${fit.height} (${fit.newArea}) | target AR ${fit.targetAspect.toFixed(3)}, actual ${fit.actualAspect.toFixed(3)} (${fit.aspectErrorPct.toFixed(2)}% error).`;
 }
 
 function formatDimensions(widthCards, heightCards) {
