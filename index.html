@@ -23,12 +23,12 @@
         <input id="imageInput" type="file" accept="image/*,.svg" />
       </label>
 
-      <label>Rows
-        <input id="rowsInput" type="number" min="5" max="300" value="60" />
+      <label>Width (cards)
+        <input id="widthCardsInput" type="number" min="5" max="300" value="45" />
       </label>
 
-      <label>Columns
-        <input id="colsInput" type="number" min="5" max="300" value="45" />
+      <label>Height (cards)
+        <input id="heightCardsInput" type="number" min="5" max="300" value="60" />
       </label>
 
       <label>Contrast
@@ -41,8 +41,19 @@
     </section>
 
     <section class="output">
-      <canvas id="previewCanvas" width="900" height="600"></canvas>
-      <pre id="inventory"></pre>
+      <div class="canvases">
+        <div class="panel">
+          <h2>Original</h2>
+          <canvas id="originalCanvas" width="900" height="600"></canvas>
+        </div>
+
+        <div class="panel">
+          <h2>Card Mosaic</h2>
+          <canvas id="mosaicCanvas" width="900" height="600"></canvas>
+        </div>
+      </div>
+
+      <pre id="statusPanel"></pre>
     </section>
 
     <img id="sourceImage" alt="source" hidden />

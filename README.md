@@ -4,10 +4,16 @@ Bare-bones personal tool that converts an image into a playing-card mosaic map.
 
 ## What it does
 - Load an SVG/image (bundled or upload)
+- Side-by-side view: original image + card mosaic output
 - Convert image to grayscale blocks
 - Map brightness to card ranks (A = lightest, 10 = darkest)
-- Show placement preview + rank inventory counts
+- Render with real playing-card SVGs (spades set)
+- Show rank inventory + total physical dimensions in inches/feet
 - Export placement map as JSON or CSV
+
+## Card assets
+Playing card SVGs are sourced from:
+- https://github.com/hayeah/playing-cards-assets (MIT)
 
 ## Run locally
 Open `index.html` directly, or serve with any static server.

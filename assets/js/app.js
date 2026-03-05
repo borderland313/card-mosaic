@@ -1,54 +1,68 @@
 const imageInput = document.getElementById('imageInput');
 const svgPicker = document.getElementById('svgPicker');
-const rowsInput = document.getElementById('rowsInput');
-const colsInput = document.getElementById('colsInput');
+const widthCardsInput = document.getElementById('widthCardsInput');
+const heightCardsInput = document.getElementById('heightCardsInput');
 const contrastInput = document.getElementById('contrastInput');
 const generateBtn = document.getElementById('generateBtn');
 const exportJsonBtn = document.getElementById('exportJsonBtn');
 const exportCsvBtn = document.getElementById('exportCsvBtn');
-const inventoryEl = document.getElementById('inventory');
-const canvas = document.getElementById('previewCanvas');
-const ctx = canvas.getContext('2d');
+const statusPanel = document.getElementById('statusPanel');
+
+const originalCanvas = document.getElementById('originalCanvas');
+const originalCtx = originalCanvas.getContext('2d');
+const mosaicCanvas = document.getElementById('mosaicCanvas');
+const mosaicCtx = mosaicCanvas.getContext('2d');
+
 const sourceImage = document.getElementById('sourceImage');
 
-const ranks = ['A','2','3','4','5','6','7','8','9','10'];
+const ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
+const cardWidthInches = 2.5;
+const cardHeightInches = 3.5;
+
+const cardImagePaths = {
+  A: 'assets/img/cards/ace_of_spades.svg',
+  '2': 'assets/img/cards/2_of_spades.svg',
+  '3': 'assets/img/cards/3_of_spades.svg',
+  '4': 'assets/img/cards/4_of_spades.svg',
+  '5': 'assets/img/cards/5_of_spades.svg',
+  '6': 'assets/img/cards/6_of_spades.svg',
+  '7': 'assets/img/cards/7_of_spades.svg',
+  '8': 'assets/img/cards/8_of_spades.svg',
+  '9': 'assets/img/cards/9_of_spades.svg',
+  '10': 'assets/img/cards/10_of_spades.svg'
+};
+
+const cardImages = {};
+let cardImagesLoaded = false;
 let lastGrid = [];
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error(`Failed to load: ${src}`));
+    img.src = src;
+  });
+}
+
+async function ensureCardImagesLoaded() {
+  if (cardImagesLoaded) return;
+
+  const tasks = ranks.map(async (rank) => {
+    cardImages[rank] = await loadImage(cardImagePaths[rank]);
+  });
+
+  await Promise.all(tasks);
+  cardImagesLoaded = true;
+}
 
 function brightnessToRank(value) {
   const idx = Math.max(0, Math.min(ranks.length - 1, Math.floor((value / 256) * ranks.length)));
   return ranks[idx];
 }
 
-function rankShade(rank) {
-  const idx = ranks.indexOf(rank);
-  const shade = 255 - Math.round((idx / (ranks.length - 1)) * 220);
-  return `rgb(${shade},${shade},${shade})`;
-}
-
-function drawGrid(grid, rows, cols) {
-  const cellW = canvas.width / cols;
-  const cellH = canvas.height / rows;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const rank = grid[r][c];
-      ctx.fillStyle = rankShade(rank);
-      ctx.fillRect(c * cellW, r * cellH, cellW, cellH);
-
-      if (cellW > 12 && cellH > 12) {
-        ctx.fillStyle = rank === 'A' ? '#222' : '#111';
-        ctx.font = `${Math.min(cellW, cellH) * 0.5}px sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(rank, c * cellW + cellW / 2, r * cellH + cellH / 2);
-      }
-    }
-  }
-}
-
 function buildInventory(grid) {
-  const counts = Object.fromEntries(ranks.map(r => [r, 0]));
+  const counts = Object.fromEntries(ranks.map((r) => [r, 0]));
   for (const row of grid) {
     for (const rank of row) counts[rank]++;
   }
@@ -57,27 +71,101 @@ function buildInventory(grid) {
 
 function contrastBrightness(v, contrast) {
   const normalized = v / 255;
-  const adjusted = ((normalized - 0.5) * contrast + 0.5);
+  const adjusted = (normalized - 0.5) * contrast + 0.5;
   return Math.max(0, Math.min(1, adjusted)) * 255;
 }
 
-function generateFromImage(img) {
-  const rows = Number(rowsInput.value);
-  const cols = Number(colsInput.value);
+function setCanvasSizes(widthCards, heightCards) {
+  const mosaicAspect = (widthCards * cardWidthInches) / (heightCards * cardHeightInches);
+  const width = 900;
+  const height = Math.max(260, Math.round(width / mosaicAspect));
+
+  originalCanvas.width = width;
+  originalCanvas.height = height;
+  mosaicCanvas.width = width;
+  mosaicCanvas.height = height;
+}
+
+function drawOriginal(img) {
+  const cw = originalCanvas.width;
+  const ch = originalCanvas.height;
+  originalCtx.fillStyle = '#ffffff';
+  originalCtx.fillRect(0, 0, cw, ch);
+
+  const scale = Math.min(cw / img.width, ch / img.height);
+  const w = img.width * scale;
+  const h = img.height * scale;
+  const x = (cw - w) / 2;
+  const y = (ch - h) / 2;
+
+  originalCtx.drawImage(img, x, y, w, h);
+}
+
+function drawMosaicGrid(grid, rows, cols) {
+  const cellW = mosaicCanvas.width / cols;
+  const cellH = mosaicCanvas.height / rows;
+
+  mosaicCtx.fillStyle = '#fff';
+  mosaicCtx.fillRect(0, 0, mosaicCanvas.width, mosaicCanvas.height);
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const rank = grid[r][c];
+      const cardImg = cardImages[rank];
+      if (!cardImg) continue;
+      mosaicCtx.drawImage(cardImg, c * cellW, r * cellH, cellW, cellH);
+    }
+  }
+}
+
+function formatDimensions(widthCards, heightCards) {
+  const widthIn = widthCards * cardWidthInches;
+  const heightIn = heightCards * cardHeightInches;
+  return {
+    widthIn,
+    heightIn,
+    widthFt: widthIn / 12,
+    heightFt: heightIn / 12
+  };
+}
+
+function updateStatus(grid, widthCards, heightCards) {
+  const inventory = buildInventory(grid);
+  const totalCards = widthCards * heightCards;
+  const dims = formatDimensions(widthCards, heightCards);
+
+  statusPanel.textContent = [
+    'Status',
+    '',
+    `Grid: ${widthCards} x ${heightCards} cards`,
+    `Total cards: ${totalCards}`,
+    `Total size (in): ${dims.widthIn.toFixed(1)}" W x ${dims.heightIn.toFixed(1)}" H`,
+    `Total size (ft): ${dims.widthFt.toFixed(2)}' W x ${dims.heightFt.toFixed(2)}' H`,
+    '',
+    'Inventory',
+    ...Object.entries(inventory).map(([rank, count]) => `${rank}: ${count}`)
+  ].join('\n');
+}
+
+async function generateFromImage(img) {
+  const widthCards = Number(widthCardsInput.value);
+  const heightCards = Number(heightCardsInput.value);
   const contrast = Number(contrastInput.value);
 
+  await ensureCardImagesLoaded();
+
   const temp = document.createElement('canvas');
-  temp.width = cols;
-  temp.height = rows;
+  temp.width = widthCards;
+  temp.height = heightCards;
   const tctx = temp.getContext('2d');
-  tctx.drawImage(img, 0, 0, cols, rows);
-  const data = tctx.getImageData(0, 0, cols, rows).data;
+  tctx.drawImage(img, 0, 0, widthCards, heightCards);
+  const data = tctx.getImageData(0, 0, widthCards, heightCards).data;
 
   const grid = [];
-  for (let r = 0; r < rows; r++) {
+  for (let r = 0; r < heightCards; r++) {
     const row = [];
-    for (let c = 0; c < cols; c++) {
-      const i = (r * cols + c) * 4;
+    for (let c = 0; c < widthCards; c++) {
+      const i = (r * widthCards + c) * 4;
       const rr = data[i];
       const gg = data[i + 1];
       const bb = data[i + 2];
@@ -89,12 +177,10 @@ function generateFromImage(img) {
   }
 
   lastGrid = grid;
-  drawGrid(grid, rows, cols);
-
-  const inventory = buildInventory(grid);
-  inventoryEl.textContent = `Inventory\n\n${Object.entries(inventory)
-    .map(([rank, count]) => `${rank}: ${count}`)
-    .join('\n')}`;
+  setCanvasSizes(widthCards, heightCards);
+  drawOriginal(img);
+  drawMosaicGrid(grid, heightCards, widthCards);
+  updateStatus(grid, widthCards, heightCards);
 }
 
 function download(filename, content, type = 'text/plain') {
@@ -108,17 +194,29 @@ function download(filename, content, type = 'text/plain') {
 }
 
 function loadImageFromUrl(url) {
-  sourceImage.onload = () => generateFromImage(sourceImage);
+  sourceImage.onload = async () => {
+    try {
+      await generateFromImage(sourceImage);
+    } catch (error) {
+      alert(error.message);
+    }
+  };
   sourceImage.src = url;
 }
 
 imageInput.addEventListener('change', (e) => {
   const file = e.target.files?.[0];
   if (!file) return;
+
   const url = URL.createObjectURL(file);
-  sourceImage.onload = () => {
-    generateFromImage(sourceImage);
-    URL.revokeObjectURL(url);
+  sourceImage.onload = async () => {
+    try {
+      await generateFromImage(sourceImage);
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      URL.revokeObjectURL(url);
+    }
   };
   sourceImage.src = url;
 });
@@ -127,12 +225,17 @@ svgPicker.addEventListener('change', () => {
   if (svgPicker.value) loadImageFromUrl(svgPicker.value);
 });
 
-generateBtn.addEventListener('click', () => {
+generateBtn.addEventListener('click', async () => {
   if (!sourceImage.src) {
     alert('Pick or upload an image first.');
     return;
   }
-  generateFromImage(sourceImage);
+
+  try {
+    await generateFromImage(sourceImage);
+  } catch (error) {
+    alert(error.message);
+  }
 });
 
 exportJsonBtn.addEventListener('click', () => {
@@ -142,6 +245,6 @@ exportJsonBtn.addEventListener('click', () => {
 
 exportCsvBtn.addEventListener('click', () => {
   if (!lastGrid.length) return alert('Generate first.');
-  const csv = lastGrid.map(row => row.join(',')).join('\n');
+  const csv = lastGrid.map((row) => row.join(',')).join('\n');
   download('card-mosaic-map.csv', csv, 'text/csv');
 });
