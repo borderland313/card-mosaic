@@ -11,7 +11,7 @@
     <h1>Card Mosaic Tool</h1>
 
     <section class="controls">
-      <label>Pick bundled SVG preset
+      <label class="wide">Pick bundled SVG preset
         <select id="svgPicker">
           <option value="">-- none --</option>
           <option value="assets/img/svg-sources/butterfly.svg">Butterfly</option>
@@ -51,7 +51,7 @@
         </select>
       </label>
 
-      <label>Or upload image
+      <label class="wide">Or upload image
         <input id="imageInput" type="file" accept="image/*,.svg" />
       </label>
 
@@ -67,8 +67,24 @@
         <input id="contrastInput" type="range" min="0.5" max="2" step="0.05" value="1" />
       </label>
 
-      <fieldset class="suit-box">
-        <legend>Suits to use</legend>
+      <label>Border rank
+        <select id="borderRankInput">
+          <option>A</option><option>2</option><option>3</option><option>4</option><option>5</option>
+          <option>6</option><option>7</option><option>8</option><option>9</option><option selected>10</option>
+        </select>
+      </label>
+
+      <label>Border suit
+        <select id="borderSuitInput">
+          <option value="spades" selected>♠ Spades</option>
+          <option value="clubs">♣ Clubs</option>
+          <option value="hearts">♥ Hearts</option>
+          <option value="diamonds">♦ Diamonds</option>
+        </select>
+      </label>
+
+      <fieldset class="suit-box wide">
+        <legend>Suits in image area</legend>
         <div class="suit-grid">
           <label><input type="checkbox" class="suitInput" value="spades" checked> ♠ Spades</label>
           <label><input type="checkbox" class="suitInput" value="clubs" checked> ♣ Clubs</label>
@@ -82,9 +98,11 @@
         </div>
       </fieldset>
 
-      <button type="button" id="generateBtn">Generate</button>
-      <button type="button" id="exportJsonBtn">Export JSON</button>
-      <button type="button" id="exportCsvBtn">Export CSV</button>
+      <div class="actions wide">
+        <button type="button" id="generateBtn">Generate</button>
+        <button type="button" id="exportJsonBtn">Export JSON</button>
+        <button type="button" id="exportCsvBtn">Export CSV</button>
+      </div>
     </section>
 
     <section class="output">

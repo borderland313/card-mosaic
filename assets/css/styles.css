@@ -1,48 +1,90 @@
 body {
   margin: 0;
-  font-family: system-ui, sans-serif;
-  background: #111;
-  color: #eee;
+  font-family: Inter, system-ui, sans-serif;
+  background: #0e0e0e;
+  color: #efefef;
 }
 
 main {
-  max-width: 1400px;
+  max-width: 1420px;
   margin: 0 auto;
   padding: 1rem;
 }
 
 h1 {
-  font-size: 1.2rem;
-  margin: 0 0 1rem;
+  font-size: 1.15rem;
+  margin: 0 0 0.8rem;
 }
 
 h2 {
   font-size: 0.95rem;
-  margin: 0 0 0.4rem;
-  color: #bbb;
+  margin: 0 0 0.35rem;
+  color: #c8c8c8;
   font-weight: 600;
 }
 
 .controls {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 0.7rem;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.6rem;
   margin-bottom: 1rem;
+  padding: 0.75rem;
+  border: 1px solid #2d2d2d;
+  border-radius: 12px;
+  background: #151515;
   align-items: end;
+}
+
+.wide {
+  grid-column: span 2;
+}
+
+label,
+fieldset,
+.actions {
+  background: #111;
+  border: 1px solid #2c2c2c;
+  border-radius: 9px;
+  padding: 0.5rem;
 }
 
 label {
   display: flex;
   flex-direction: column;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   gap: 0.3rem;
 }
 
-.suit-box {
-  border: 1px solid #444;
+legend {
+  font-size: 0.8rem;
+  color: #bdbdbd;
+  padding: 0 0.35rem;
+}
+
+input, select, button {
+  padding: 0.45rem;
   border-radius: 8px;
-  padding: 0.55rem;
-  background: #1a1a1a;
+  border: 1px solid #404040;
+  background: #1f1f1f;
+  color: #eee;
+}
+
+input[type="checkbox"] {
+  accent-color: #8ab4ff;
+}
+
+button {
+  cursor: pointer;
+}
+
+.actions {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.suit-box {
+  margin: 0;
 }
 
 .suit-grid {
@@ -57,6 +99,10 @@ label {
   flex-direction: row;
   align-items: center;
   gap: 0.4rem;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  padding: 0;
 }
 
 .suit-actions {
@@ -64,21 +110,9 @@ label {
   gap: 0.35rem;
 }
 
-input, select, button {
-  padding: 0.45rem;
-  border-radius: 8px;
-  border: 1px solid #444;
-  background: #1f1f1f;
-  color: #eee;
-}
-
-button {
-  cursor: pointer;
-}
-
 .output {
   display: grid;
-  grid-template-columns: 2fr 280px;
+  grid-template-columns: 2fr 300px;
   gap: 1rem;
 }
 
@@ -95,20 +129,25 @@ button {
 canvas {
   width: 100%;
   background: #fff;
-  border-radius: 8px;
+  border-radius: 10px;
+  border: 1px solid #2f2f2f;
 }
 
 pre {
-  background: #1a1a1a;
-  border: 1px solid #333;
-  border-radius: 8px;
+  background: #151515;
+  border: 1px solid #2f2f2f;
+  border-radius: 10px;
   padding: 0.8rem;
   white-space: pre-wrap;
-  min-height: 200px;
+  min-height: 220px;
   margin: 0;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1200px) {
+  .wide {
+    grid-column: span 1;
+  }
+
   .output {
     grid-template-columns: 1fr;
   }
